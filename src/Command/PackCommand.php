@@ -44,7 +44,8 @@ class PackCommand extends Command
 			->addOption("file-list", 'f', InputOption::VALUE_REQUIRED, 'A php readable file which returns a list of all files to pack')
 			->addOption("prefix", 'p', InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'file prefixes to replace for the archive', ['/vendor'])
 			->addOption("with-composer", 'w', InputOption::VALUE_NONE, 'Includes the vendor/composer directory')
-			->addOption("file-list-stdin", 'i', InputOption::VALUE_NONE, "Reads the file list from stdin.");
+			->addOption("file-list-stdin", 'i', InputOption::VALUE_NONE, "Reads the file list from stdin.")
+			->addOption("filter", 'f', InputOption::VALUE_REQUIRED, 'Regex filter for directory file contents', "/^\.|^Tests/i");
 	}
 
 	protected function readFromFileList(InputInterface $input): Generator {
@@ -68,7 +69,7 @@ class PackCommand extends Command
 		$read = fread(STDIN, 1000000);
 		foreach(explode(PHP_EOL, $read) as $file) {
 			if($file)
-				yield $file;
+				yield trim($file);
 		}
 	}
 
@@ -82,15 +83,21 @@ class PackCommand extends Command
 		$phar->addFile(dirname(dirname(__DIR__)) . "/LICENSE", "LICENSE");
 
 		foreach($this->chooseGenerator($input) as $file) {
-			if(is_file($file))
+			if(is_file($file)) {
 				$phar->addFile($file);
+				if($IO->isVerbose())
+					$IO->text("Added File $file");
+			}
 			elseif(is_dir($file)) {
-				$filter = "/^\.|^Tests/i";
+				$filter = $input->getOption("filter");
 
-				$iterator = function($dir) use (&$iterator, $filter) {
+				$iterator = function($dir) use (&$iterator, $filter, $IO) {
 					foreach(new DirectoryIterator($dir) as $file) {
-						if(preg_match($filter, $file->getBasename()))
+						if(preg_match($filter, $file->getBasename())) {
+							if($IO->isVeryVerbose())
+								$IO->text("Skipped File ", $file->getPathname());
 							continue;
+						}
 						if(is_file($file->getPathname()))
 							yield $file;
 						elseif(is_dir($file->getPathname()))
@@ -100,6 +107,8 @@ class PackCommand extends Command
 
 				foreach($iterator($file) as $theFile) {
 					$phar->addFile($theFile->getPathname());
+					if($IO->isVerbose())
+						$IO->text("Added File ". $theFile->getPathname());
 				}
 			} else {
 				$IO->warning("File $file not found.");
