@@ -1,0 +1,42 @@
+{
+  "name": "tasoft/phar-builder",
+  "license": "MIT",
+  "minimum-stability": "dev",
+  "authors": [
+    {
+      "name": "Thomas Abplanalp",
+      "email": "info@tasoft.ch"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "TASoft\\Util\\" : "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "TASoft\\Util\\Test\\": "Tests"
+    }
+  },
+  "require" : {
+    "php": "^7.2"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^6",
+    "symfony/console": "5.0.x-dev"
+  },
+  "scripts": {
+    "build": [
+      "php bin/build.php check src/main.php",
+      "mkdir -p dist",
+      "php bin/build.php resolve src/main.php -t dist/resolved-files.php",
+      "php -dphar.readonly=0 bin/build.php pack dist/phar-builder.phar --file-list dist/resolved-files.php --with-composer",
+      "php -dphar.readonly=0 bin/build.php executable dist/phar-builder.phar --main src/main.php --phar-name phar-builder.phar",
+      "php -dphar.readonly=0 bin/build.php runable -ophar.readonly=0 dist/phar-builder.phar dist/phar-builder",
+      "rm dist/resolved-files.php"
+    ]
+  },
+  "bin": [
+    "dist/phar-builder"
+  ]
+}
