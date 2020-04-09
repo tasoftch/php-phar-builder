@@ -45,7 +45,7 @@ class PackCommand extends Command
 			->addOption("prefix", 'p', InputOption::VALUE_OPTIONAL|InputOption::VALUE_IS_ARRAY, 'file prefixes to replace for the archive', ['/vendor'])
 			->addOption("with-composer", 'w', InputOption::VALUE_NONE, 'Includes the vendor/composer directory')
 			->addOption("file-list-stdin", 'i', InputOption::VALUE_NONE, "Reads the file list from stdin.")
-			->addOption("filter", 'f', InputOption::VALUE_REQUIRED, 'Regex filter for directory file contents', "/^\.|^Tests/i");
+			->addOption("filter", 'l', InputOption::VALUE_REQUIRED, 'Regex filter for directory file contents', "/^\.|^Tests/i");
 	}
 
 	protected function readFromFileList(InputInterface $input): Generator {
