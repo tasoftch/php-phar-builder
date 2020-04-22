@@ -51,8 +51,14 @@ class PackCommand extends Command
 	protected function readFromFileList(InputInterface $input): Generator {
 		$list = $input->getOption("file-list");
 		if(is_file($list)) {
-			foreach(require $list as $file)
-				yield $file;
+			if(fnmatch("*.php", $list)) {
+				foreach(require $list as $file)
+					yield $file;
+			} else {
+				$contents = file_get_contents($list);
+				foreach(explode(PHP_EOL, $contents) as $file)
+					yield trim($file);
+			}
 		}
 	}
 
