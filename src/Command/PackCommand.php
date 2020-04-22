@@ -50,19 +50,26 @@ class PackCommand extends Command
 
 	protected function readFromFileList(InputInterface $input): Generator {
 		$list = $input->getOption("file-list");
+		if($list[0] != "/")
+			$list = getcwd() . DIRECTORY_SEPARATOR . $list;
+
 		if(is_file($list)) {
+			$yield = function($file) {
+				$file = trim($file);
+
+				if($file[0] != '/') {
+					yield getcwd() . DIRECTORY_SEPARATOR . $file => $file;
+				} else
+					yield $file => $file;
+			};
+
 			if(fnmatch("*.php", $list)) {
 				foreach(require $list as $file)
-					yield $file;
+					yield from $yield ($file);
 			} else {
-				echo $list, PHP_EOL;
-
 				$contents = file_get_contents($list);
-				echo $contents;
-
 				foreach(explode(PHP_EOL, $contents) as $file) {
-					var_dump($file);
-					yield trim($file);
+					yield from $yield ($file);
 				}
 			}
 		}
@@ -94,13 +101,13 @@ class PackCommand extends Command
 		$phar = new \Phar($app_name);
 		$phar->addFile(dirname(dirname(__DIR__)) . "/LICENSE", "LICENSE");
 
-		foreach($this->chooseGenerator($input) as $file) {
-			if(is_file($file)) {
-				$phar->addFile($file);
+		foreach($this->chooseGenerator($input) as $localFile => $file) {
+			if(is_file($localFile)) {
+				$phar->addFile($localFile, $file);
 				if($IO->isVerbose())
 					$IO->text("Added File $file");
 			}
-			elseif(is_dir($file)) {
+			elseif(is_dir($localFile)) {
 				$filter = $input->getOption("filter");
 
 				$iterator = function($dir) use (&$iterator, $filter, $IO) {
@@ -117,18 +124,18 @@ class PackCommand extends Command
 					}
 				};
 
-				foreach($iterator($file) as $theFile) {
+				foreach($iterator($localFile) as $theFile) {
 					$phar->addFile($theFile->getPathname());
 					if($IO->isVerbose())
 						$IO->text("Added File ". $theFile->getPathname());
 				}
 			} else {
-				$IO->warning("File $file not found.");
+				$IO->warning("File $localFile not found.");
 			}
 		}
 
 		if($input->getOption("with-composer")) {
-			foreach(new DirectoryIterator("vendor/composer") as $file) {
+			foreach(new DirectoryIterator(getcwd() . "/vendor/composer") as $file) {
 				$file = $file->getPathname();
 				if(is_file($file)) {
 					$phar->addFile($file);
