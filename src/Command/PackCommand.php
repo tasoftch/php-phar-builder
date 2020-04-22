@@ -55,9 +55,15 @@ class PackCommand extends Command
 				foreach(require $list as $file)
 					yield $file;
 			} else {
+				echo $list, PHP_EOL;
+
 				$contents = file_get_contents($list);
-				foreach(explode(PHP_EOL, $contents) as $file)
+				echo $contents;
+
+				foreach(explode(PHP_EOL, $contents) as $file) {
+					var_dump($file);
 					yield trim($file);
+				}
 			}
 		}
 	}
